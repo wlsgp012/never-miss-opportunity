@@ -19,9 +19,24 @@ class CnnFearGreedProvider(
     private val clockMillis: () -> Long = System::currentTimeMillis,
 ) : MarketDataProvider {
     private val json = Json { ignoreUnknownKeys = true }
+    private val apiClient = client.newBuilder()
+        .addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+                .header("User-Agent", CNN_USER_AGENT)
+                .header("Accept", "application/json, text/plain, */*")
+                .header("Accept-Language", "en-US,en;q=0.9,ko;q=0.8")
+                .header("Origin", "https://www.cnn.com")
+                .header("Referer", "https://www.cnn.com/markets/fear-and-greed")
+                .header("Sec-Fetch-Dest", "empty")
+                .header("Sec-Fetch-Mode", "cors")
+                .header("Sec-Fetch-Site", "same-site")
+                .build()
+            chain.proceed(request)
+        }
+        .build()
     private val api = Retrofit.Builder()
         .baseUrl(baseUrl)
-        .client(client)
+        .client(apiClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(CnnApi::class.java)
@@ -49,6 +64,9 @@ class CnnFearGreedProvider(
         }.getOrElse { ProviderFailureClassifier.failureFor(indicator, it) }
     }
 }
+
+private const val CNN_USER_AGENT =
+    "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
 
 private interface CnnApi {
     @GET("index/fearandgreed/graphdata")

@@ -1,18 +1,22 @@
 package com.nevermiss.opportunity.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -20,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nevermiss.opportunity.domain.MovementFormatter
 import com.nevermiss.opportunity.domain.QuoteState
@@ -59,10 +64,12 @@ fun MarketDashboardScreen(
                     Button(onClick = onEnableNotifications) { Text("Enable") }
                 }
             }
-            LazyColumn {
+            LazyColumn(
+                contentPadding = PaddingValues(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 items(state.rows, key = { it.indicator.name }) { row ->
                     MarketIndicatorRow(row)
-                    HorizontalDivider()
                 }
             }
         }
@@ -72,29 +79,74 @@ fun MarketDashboardScreen(
 @Composable
 private fun MarketIndicatorRow(row: MarketRowState) {
     val quote = row.quote
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+    val movementColor = when {
+        quote == null || quote.change == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant
+        quote.change > 0.0 -> MarketGreen
+        else -> MarketRed
+    }
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(row.indicator.displayName, fontWeight = FontWeight.SemiBold)
-            Text(quote?.let { MovementFormatter.value(it) } ?: "--")
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 112.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Text(
+                    text = row.indicator.displayName,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = row.statusText(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                )
+            }
             Text(
-                text = quote?.let { MovementFormatter.movement(it) } ?: "No data",
-                color = when {
-                    quote == null || quote.change == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant
-                    quote.change > 0.0 -> MarketGreen
-                    else -> MarketRed
-                },
+                text = quote?.let { MovementFormatter.value(it) } ?: "--",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (quote == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
             )
-            Text(row.statusText())
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                Text(
+                    text = quote?.let { "Updated ${timeFormatter.format(Date(it.observedAtEpochMillis))}" }
+                        ?: "Waiting for first update",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = quote?.let { MovementFormatter.movement(it) } ?: "No data",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = movementColor,
+                    textAlign = TextAlign.End,
+                )
+            }
         }
-        Text(
-            text = quote?.let { "Updated ${timeFormatter.format(Date(it.observedAtEpochMillis))}" } ?: "Waiting for first update",
-            style = MaterialTheme.typography.bodySmall,
-        )
     }
 }
 

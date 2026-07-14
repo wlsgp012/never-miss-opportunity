@@ -63,17 +63,16 @@ private data class MvrvPoint(
 )
 
 private fun CoinMetricsAssetMetricRow.toMvrvPoint(): MvrvPoint? {
-    val marketCap = marketCapUsd?.toDoubleOrNull() ?: return null
-    val realizedCap = realizedCapUsd?.toDoubleOrNull()?.takeIf { it != 0.0 } ?: return null
+    val mvrv = mvrv?.toDoubleOrNull() ?: return null
     val observedAt = runCatching { Instant.parse(time).toEpochMilli() }.getOrNull() ?: return null
-    return MvrvPoint(value = marketCap / realizedCap, observedAtEpochMillis = observedAt)
+    return MvrvPoint(value = mvrv, observedAtEpochMillis = observedAt)
 }
 
 private interface CoinMetricsApi {
     @GET("v4/timeseries/asset-metrics")
     suspend fun assetMetrics(
         @Query("assets") assets: String = "btc",
-        @Query("metrics") metrics: String = "CapMrktCurUSD,CapRealUSD",
-        @Query("page_size") pageSize: Int = 2,
+        @Query("metrics") metrics: String = "CapMVRVCur",
+        @Query("page_size") pageSize: Int = 7,
     ): CoinMetricsAssetMetricsResponse
 }

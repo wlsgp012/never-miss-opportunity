@@ -46,6 +46,5 @@ data class CoinMetricsAssetMetricsResponse(
 @Serializable
 data class CoinMetricsAssetMetricRow(
     val time: String,
-    @SerialName("CapMrktCurUSD") val marketCapUsd: String? = null,
-    @SerialName("CapRealUSD") val realizedCapUsd: String? = null,
+    @SerialName("CapMVRVCur") val mvrv: String? = null,
 )

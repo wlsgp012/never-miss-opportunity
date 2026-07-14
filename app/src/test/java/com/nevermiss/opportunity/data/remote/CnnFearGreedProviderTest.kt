@@ -5,6 +5,7 @@ import com.nevermiss.opportunity.domain.Indicator
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,7 +14,7 @@ import org.junit.Test
 class CnnFearGreedProviderTest {
     @Test
     fun `parses cnn fear greed score`() = runTest {
-        val result = fetch(
+        val (result, requestUserAgent) = fetchWithUserAgent(
             MockResponse().setBody(
                 """
                 {
@@ -31,6 +32,8 @@ class CnnFearGreedProviderTest {
         val quote = (result as ProviderResult.Success).quote
         assertEquals(44.0, quote.value, 0.001)
         assertEquals(-3.0, quote.change, 0.001)
+        assertNotNull(requestUserAgent)
+        assertTrue(requestUserAgent!!.contains("Mozilla"))
     }
 
     @Test
@@ -62,11 +65,17 @@ class CnnFearGreedProviderTest {
     }
 
     private suspend fun fetch(response: MockResponse): ProviderResult {
+        return fetchWithUserAgent(response).first
+    }
+
+    private suspend fun fetchWithUserAgent(response: MockResponse): Pair<ProviderResult, String?> {
         val server = MockWebServer()
         server.enqueue(response)
         server.start()
         return try {
-            CnnFearGreedProvider(baseUrl = server.url("/").toString()).fetch(Indicator.CNN_FEAR_GREED)
+            val result = CnnFearGreedProvider(baseUrl = server.url("/").toString()).fetch(Indicator.CNN_FEAR_GREED)
+            val userAgent = server.takeRequest().getHeader("User-Agent")
+            result to userAgent
         } finally {
             server.shutdown()
         }
