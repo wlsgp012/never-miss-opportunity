@@ -88,38 +88,120 @@ class YahooFinanceProviderTest {
 
     @Test
     fun `supports vix and bitcoin yahoo symbols`() = runTest {
-        val response = MockResponse().setBody(
-            """
-            {
-              "chart": {
-                "result": [{
-                  "meta": {
-                    "regularMarketPrice": 67890.0,
-                    "previousClose": 67000.0,
-                    "regularMarketTime": 1725000000
+        val btcResult = fetch(
+            Indicator.BTC_USD,
+            MockResponse().setBody(
+                """
+                {
+                  "chart": {
+                    "result": [{
+                      "meta": {
+                        "regularMarketPrice": 67890.0,
+                        "previousClose": 67000.0,
+                        "regularMarketTime": 1725000000
+                      }
+                    }],
+                    "error": null
                   }
-                }],
-                "error": null
-              }
-            }
-            """.trimIndent(),
+                }
+                """.trimIndent(),
+            ),
+            MockResponse().setBody(rsiChartBody(closeValues = (1..15).map { it.toDouble() })),
         )
-
-        val btcResult = fetch(Indicator.BTC_USD, response)
 
         assertTrue(btcResult is ProviderResult.Success)
         assertEquals(67890.0, (btcResult as ProviderResult.Success).quote.value, 0.001)
     }
 
-    private suspend fun fetch(indicator: Indicator, response: MockResponse): ProviderResult {
+    @Test
+    fun `calculates rsi for supported yahoo indicators`() = runTest {
+        val result = fetch(
+            Indicator.SP500,
+            MockResponse().setBody(
+                """
+                {
+                  "chart": {
+                    "result": [{
+                      "meta": {
+                        "regularMarketPrice": 5500.0,
+                        "previousClose": 5450.0,
+                        "regularMarketTime": 1725000000
+                      }
+                    }],
+                    "error": null
+                  }
+                }
+                """.trimIndent(),
+            ),
+            MockResponse().setBody(rsiChartBody(closeValues = (1..15).map { it.toDouble() })),
+        )
+
+        assertTrue(result is ProviderResult.Success)
+        val quote = (result as ProviderResult.Success).quote
+        assertEquals(100.0, quote.rsi ?: -1.0, 0.001)
+    }
+
+    @Test
+    fun `omits rsi for unsupported yahoo indicators`() = runTest {
+        val result = fetch(
+            Indicator.USD_KRW,
+            MockResponse().setBody(
+                """
+                {
+                  "chart": {
+                    "result": [{
+                      "meta": {
+                        "regularMarketPrice": 1382.4,
+                        "previousClose": 1380.3,
+                        "regularMarketTime": 1725000000
+                      }
+                    }],
+                    "error": null
+                  }
+                }
+                """.trimIndent(),
+            ),
+        )
+
+        assertTrue(result is ProviderResult.Success)
+        assertEquals(null, (result as ProviderResult.Success).quote.rsi)
+    }
+
+    private fun rsiChartBody(closeValues: List<Double>): String =
+        """
+        {
+          "chart": {
+            "result": [{
+              "meta": {
+                "regularMarketPrice": ${closeValues.last()},
+                "previousClose": ${closeValues.dropLast(1).last()},
+                "regularMarketTime": 1725000000
+              },
+              "timestamp": [${closeValues.indices.joinToString { (1723000000 + it * 86400).toString() }}],
+              "indicators": {
+                "quote": [{
+                  "close": [${closeValues.joinToString()}]
+                }]
+              }
+            }],
+            "error": null
+          }
+        }
+        """.trimIndent()
+
+    private suspend fun fetch(indicator: Indicator, vararg responses: MockResponse): ProviderResult {
         val server = MockWebServer()
-        server.enqueue(response)
+        responses.forEach { server.enqueue(it) }
         server.start()
         return try {
             YahooFinanceProvider(baseUrl = server.url("/").toString()).fetch(indicator)
         } finally {
             server.shutdown()
         }
+    }
+
+    private suspend fun fetch(indicator: Indicator, response: MockResponse): ProviderResult {
+        return fetch(indicator, *arrayOf(response))
     }
 
     private fun assertFailure(result: ProviderResult, retryable: Boolean, reason: String? = null) {

@@ -23,7 +23,7 @@ import org.junit.Test
 class DefaultMarketRepositoryTest {
     @Test
     fun `refresh persists successful provider quotes`() = runTest {
-        val quote = quote(Indicator.USD_KRW)
+        val quote = quote(Indicator.USD_KRW).copy(signalLabel = "Fear", rsi = 54.2)
         val dao = FakeMarketDao()
         val repository = DefaultMarketRepository(
             dao,
@@ -206,6 +206,8 @@ class DefaultMarketRepositoryTest {
         observedAtEpochMillis = observedAtEpochMillis,
         source = source,
         state = state,
+        signalLabel = signalLabel,
+        rsi = rsi,
     )
 
     private fun QuoteEntity.toMarketQuote() = MarketQuote(
@@ -216,6 +218,8 @@ class DefaultMarketRepositoryTest {
         observedAtEpochMillis = observedAtEpochMillis,
         source = source,
         state = state,
+        signalLabel = signalLabel,
+        rsi = rsi,
     )
 
     private class FakeMarketDao(initialRows: List<QuoteEntity> = emptyList()) : MarketDao {

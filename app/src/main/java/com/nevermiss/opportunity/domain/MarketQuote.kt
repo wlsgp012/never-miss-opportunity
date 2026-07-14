@@ -15,4 +15,6 @@ data class MarketQuote(
     val observedAtEpochMillis: Long,
     val source: String,
     val state: QuoteState,
+    val signalLabel: String? = null,
+    val rsi: Double? = null,
 )

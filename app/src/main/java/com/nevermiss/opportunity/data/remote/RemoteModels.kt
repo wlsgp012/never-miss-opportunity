@@ -16,7 +16,11 @@ data class YahooChart(
 data class YahooError(val code: String? = null, val description: String? = null)
 
 @Serializable
-data class YahooResult(val meta: YahooMeta)
+data class YahooResult(
+    val meta: YahooMeta,
+    val timestamp: List<Long>? = null,
+    val indicators: YahooIndicators? = null,
+)
 
 @Serializable
 data class YahooMeta(
@@ -27,6 +31,16 @@ data class YahooMeta(
 )
 
 @Serializable
+data class YahooIndicators(
+    val quote: List<YahooQuote>? = null,
+)
+
+@Serializable
+data class YahooQuote(
+    val close: List<Double?>? = null,
+)
+
+@Serializable
 data class CnnFearGreedResponse(
     @SerialName("fear_and_greed") val fearAndGreed: CnnFearGreed,
 )
@@ -34,6 +48,7 @@ data class CnnFearGreedResponse(
 @Serializable
 data class CnnFearGreed(
     val score: Double,
+    val rating: String? = null,
     @SerialName("previous_close") val previousClose: Double? = null,
     val timestamp: String? = null,
 )

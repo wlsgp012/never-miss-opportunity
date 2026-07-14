@@ -20,6 +20,7 @@ class CnnFearGreedProviderTest {
                 {
                   "fear_and_greed": {
                     "score": 44.0,
+                    "rating": "fear",
                     "previous_close": 47.0,
                     "timestamp": "2026-07-14T13:00:00Z"
                   }
@@ -32,6 +33,7 @@ class CnnFearGreedProviderTest {
         val quote = (result as ProviderResult.Success).quote
         assertEquals(44.0, quote.value, 0.001)
         assertEquals(-3.0, quote.change, 0.001)
+        assertEquals("Fear", quote.signalLabel)
         assertNotNull(requestUserAgent)
         assertTrue(requestUserAgent!!.contains("Mozilla"))
     }

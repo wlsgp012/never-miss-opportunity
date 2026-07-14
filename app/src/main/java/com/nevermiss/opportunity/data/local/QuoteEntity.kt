@@ -16,10 +16,22 @@ data class QuoteEntity(
     val observedAtEpochMillis: Long,
     val source: String,
     val state: QuoteState,
+    val signalLabel: String? = null,
+    val rsi: Double? = null,
 )
 
 fun QuoteEntity.toDomain(): MarketQuote =
-    MarketQuote(indicator, value, change, percentChange, observedAtEpochMillis, source, state)
+    MarketQuote(
+        indicator = indicator,
+        value = value,
+        change = change,
+        percentChange = percentChange,
+        observedAtEpochMillis = observedAtEpochMillis,
+        source = source,
+        state = state,
+        signalLabel = signalLabel,
+        rsi = rsi,
+    )
 
 fun MarketQuote.toEntity(): QuoteEntity =
     QuoteEntity(
@@ -30,4 +42,6 @@ fun MarketQuote.toEntity(): QuoteEntity =
         observedAtEpochMillis = observedAtEpochMillis,
         source = source,
         state = state,
+        signalLabel = signalLabel,
+        rsi = rsi,
     )

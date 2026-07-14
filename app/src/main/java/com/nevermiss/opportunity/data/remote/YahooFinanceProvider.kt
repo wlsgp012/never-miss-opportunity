@@ -40,6 +40,16 @@ class YahooFinanceProvider(
             val previous = meta.previousClose ?: meta.chartPreviousClose ?: value
             val change = value - previous
             val percent = if (previous == 0.0) null else (change / previous) * 100.0
+            val rsi = if (indicator.supportsRsi) runCatching {
+                api.chart(symbol, range = "1mo", interval = "1d")
+                    .chart
+                    .result
+                    ?.firstOrNull()
+                    ?.closeValues()
+                    ?.let { calculateRsi(it) }
+            }.getOrNull() else {
+                null
+            }
             ProviderResult.Success(
                 MarketQuote(
                     indicator = indicator,
@@ -49,9 +59,49 @@ class YahooFinanceProvider(
                     observedAtEpochMillis = (meta.regularMarketTime?.times(1000)) ?: clockMillis(),
                     source = indicator.sourceLabel,
                     state = QuoteState.FRESH,
+                    rsi = rsi,
                 ),
             )
         }.getOrElse { ProviderFailureClassifier.failureFor(indicator, it) }
+    }
+}
+
+private val Indicator.supportsRsi: Boolean
+    get() = this == Indicator.SP500 ||
+        this == Indicator.NASDAQ100 ||
+        this == Indicator.KOSPI ||
+        this == Indicator.BTC_USD
+
+private fun YahooResult.closeValues(): List<Double> =
+    indicators
+        ?.quote
+        ?.firstOrNull()
+        ?.close
+        ?.mapNotNull { it }
+        .orEmpty()
+
+private fun calculateRsi(closes: List<Double>, period: Int = 14): Double? {
+    if (closes.size <= period) return null
+
+    val deltas = closes.zipWithNext { previous, current -> current - previous }
+    var averageGain = deltas.take(period).sumOf { if (it > 0.0) it else 0.0 } / period
+    var averageLoss = deltas.take(period).sumOf { if (it < 0.0) -it else 0.0 } / period
+
+    deltas.drop(period).forEach { delta ->
+        val gain = if (delta > 0.0) delta else 0.0
+        val loss = if (delta < 0.0) -delta else 0.0
+        averageGain = ((averageGain * (period - 1)) + gain) / period
+        averageLoss = ((averageLoss * (period - 1)) + loss) / period
+    }
+
+    return when {
+        averageLoss == 0.0 && averageGain == 0.0 -> 50.0
+        averageLoss == 0.0 -> 100.0
+        averageGain == 0.0 -> 0.0
+        else -> {
+            val relativeStrength = averageGain / averageLoss
+            100.0 - (100.0 / (1.0 + relativeStrength))
+        }
     }
 }
 

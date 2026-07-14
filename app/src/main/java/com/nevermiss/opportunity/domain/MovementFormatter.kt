@@ -10,6 +10,8 @@ object MovementFormatter {
 
     fun value(quote: MarketQuote): String = valueFormat().format(quote.value)
 
+    fun rsi(value: Double): String = DecimalFormat("#0.0", DecimalFormatSymbols(Locale.US)).format(value)
+
     fun movement(quote: MarketQuote): String {
         val change = signedFormat().format(quote.change)
         val percent = quote.percentChange?.let { " (${signedFormat().format(it)}%)" }.orEmpty()

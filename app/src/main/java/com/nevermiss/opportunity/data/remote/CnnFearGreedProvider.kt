@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import java.time.Instant
+import java.util.Locale
 
 class CnnFearGreedProvider(
     baseUrl: String = "https://production.dataviz.cnn.io/",
@@ -59,6 +60,7 @@ class CnnFearGreedProvider(
                     observedAtEpochMillis = payload.fearAndGreed.timestamp?.let { Instant.parse(it).toEpochMilli() } ?: clockMillis(),
                     source = indicator.sourceLabel,
                     state = QuoteState.FRESH,
+                    signalLabel = payload.fearAndGreed.rating?.toDisplayLabel(),
                 ),
             )
         }.getOrElse { ProviderFailureClassifier.failureFor(indicator, it) }
@@ -67,6 +69,12 @@ class CnnFearGreedProvider(
 
 private const val CNN_USER_AGENT =
     "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36"
+
+private fun String.toDisplayLabel(): String =
+    trim()
+        .lowercase(Locale.US)
+        .split(Regex("\\s+"))
+        .joinToString(" ") { word -> word.replaceFirstChar { it.titlecase(Locale.US) } }
 
 private interface CnnApi {
     @GET("index/fearandgreed/graphdata")

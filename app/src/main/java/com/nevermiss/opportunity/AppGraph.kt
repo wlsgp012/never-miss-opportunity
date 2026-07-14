@@ -16,7 +16,9 @@ import com.nevermiss.opportunity.scheduler.MarketAlarmScheduler
 class AppGraph private constructor(context: Context) {
     private val appContext = context.applicationContext
 
-    val database: AppDatabase = Room.databaseBuilder(appContext, AppDatabase::class.java, "market-alerts.db").build()
+    val database: AppDatabase = Room.databaseBuilder(appContext, AppDatabase::class.java, "market-alerts.db")
+        .addMigrations(AppDatabase.MIGRATION_1_2)
+        .build()
 
     private val yahooProvider = YahooFinanceProvider()
     private val cnnProvider = CnnFearGreedProvider()

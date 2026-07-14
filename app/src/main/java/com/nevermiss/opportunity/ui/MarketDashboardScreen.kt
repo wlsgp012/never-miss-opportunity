@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nevermiss.opportunity.domain.MarketQuote
 import com.nevermiss.opportunity.domain.MovementFormatter
 import com.nevermiss.opportunity.domain.QuoteState
 import com.nevermiss.opportunity.ui.theme.MarketGreen
@@ -126,6 +127,16 @@ private fun MarketIndicatorRow(row: MarketRowState) {
                 color = if (quote == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.End,
             )
+            quote?.signalText()?.let { signalText ->
+                Text(
+                    text = signalText,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.End,
+                )
+            }
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -148,6 +159,14 @@ private fun MarketIndicatorRow(row: MarketRowState) {
             }
         }
     }
+}
+
+private fun MarketQuote.signalText(): String? {
+    val parts = listOfNotNull(
+        signalLabel,
+        rsi?.let { "RSI 14: ${MovementFormatter.rsi(it)}" },
+    )
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }
 
 internal fun MarketRowState.statusText(): String =
