@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.nevermiss.opportunity.data.DefaultMarketRepository
 import com.nevermiss.opportunity.data.MarketDataProvider
 import com.nevermiss.opportunity.data.local.AppDatabase
+import com.nevermiss.opportunity.data.remote.BitcoinMvrvProvider
 import com.nevermiss.opportunity.data.remote.CnnFearGreedProvider
 import com.nevermiss.opportunity.data.remote.GoldSpotProvider
 import com.nevermiss.opportunity.data.remote.YahooFinanceProvider
@@ -20,14 +21,18 @@ class AppGraph private constructor(context: Context) {
     private val yahooProvider = YahooFinanceProvider()
     private val cnnProvider = CnnFearGreedProvider()
     private val goldProvider = GoldSpotProvider()
+    private val bitcoinMvrvProvider = BitcoinMvrvProvider()
 
     private val routedProvider = MarketDataProvider { indicator ->
         val provider = when (indicator) {
             Indicator.CNN_FEAR_GREED -> cnnProvider
             Indicator.KRX_GOLD_1G -> goldProvider
+            Indicator.BTC_MVRV -> bitcoinMvrvProvider
             Indicator.USD_KRW,
             Indicator.SP500,
             Indicator.NASDAQ100,
+            Indicator.VIX,
+            Indicator.BTC_USD,
             Indicator.KOSPI -> yahooProvider
         }
         provider.fetch(indicator)

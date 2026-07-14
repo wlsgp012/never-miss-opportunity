@@ -15,8 +15,11 @@ class MockMarketDataProvider(
             Indicator.CNN_FEAR_GREED -> 44.0
             Indicator.SP500 -> 5630.0
             Indicator.NASDAQ100 -> 19880.0
+            Indicator.VIX -> 15.5
             Indicator.KRX_GOLD_1G -> 103500.0
             Indicator.KOSPI -> 2860.0
+            Indicator.BTC_USD -> 67890.0
+            Indicator.BTC_MVRV -> 2.1
         }
         val change = when (indicator.ordinal % 3) {
             0 -> 2.1

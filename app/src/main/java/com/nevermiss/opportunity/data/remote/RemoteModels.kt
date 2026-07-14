@@ -37,3 +37,15 @@ data class CnnFearGreed(
     @SerialName("previous_close") val previousClose: Double? = null,
     val timestamp: String? = null,
 )
+
+@Serializable
+data class CoinMetricsAssetMetricsResponse(
+    val data: List<CoinMetricsAssetMetricRow> = emptyList(),
+)
+
+@Serializable
+data class CoinMetricsAssetMetricRow(
+    val time: String,
+    @SerialName("CapMrktCurUSD") val marketCapUsd: String? = null,
+    @SerialName("CapRealUSD") val realizedCapUsd: String? = null,
+)

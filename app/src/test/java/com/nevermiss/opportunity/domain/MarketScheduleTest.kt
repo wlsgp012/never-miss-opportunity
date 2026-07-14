@@ -14,8 +14,11 @@ class MarketScheduleTest {
                 Indicator.CNN_FEAR_GREED,
                 Indicator.SP500,
                 Indicator.NASDAQ100,
+                Indicator.VIX,
                 Indicator.KRX_GOLD_1G,
                 Indicator.KOSPI,
+                Indicator.BTC_USD,
+                Indicator.BTC_MVRV,
             ),
             Indicator.displayOrder,
         )
@@ -29,13 +32,22 @@ class MarketScheduleTest {
 
     @Test
     fun `us index slots are grouped at requested night times`() {
-        val times = listOf(LocalTime.of(22, 40), LocalTime.of(23, 0), LocalTime.of(23, 40))
+        val times = listOf(LocalTime.of(8, 30), LocalTime.of(22, 40), LocalTime.of(23, 0), LocalTime.of(23, 40))
 
         times.forEach { time ->
             val slot = MarketSchedule.slotAt(time)
             assertTrue(slot.indicators.contains(Indicator.SP500))
-            assertTrue(slot.indicators.contains(Indicator.NASDAQ100))
+            if (time != LocalTime.of(8, 30)) {
+                assertTrue(slot.indicators.contains(Indicator.NASDAQ100))
+            }
+            assertTrue(slot.indicators.contains(Indicator.VIX))
         }
+    }
+
+    @Test
+    fun `bitcoin indicators run at noon`() {
+        assertEquals(listOf(LocalTime.of(12, 0)), MarketSchedule.slotsFor(Indicator.BTC_USD).map { it.time })
+        assertEquals(listOf(LocalTime.of(12, 0)), MarketSchedule.slotsFor(Indicator.BTC_MVRV).map { it.time })
     }
 
     @Test

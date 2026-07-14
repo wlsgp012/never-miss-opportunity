@@ -18,11 +18,16 @@ object MarketSchedule {
         }
         addSlot(LocalTime.of(9, 0), Indicator.CNN_FEAR_GREED)
         addSlot(LocalTime.of(23, 0), Indicator.CNN_FEAR_GREED)
+        addSlot(LocalTime.of(8, 30), Indicator.SP500)
+        addSlot(LocalTime.of(8, 30), Indicator.VIX)
         listOf(LocalTime.of(22, 40), LocalTime.of(23, 0), LocalTime.of(23, 40)).forEach { time ->
             addSlot(time, Indicator.SP500)
             addSlot(time, Indicator.NASDAQ100)
+            addSlot(time, Indicator.VIX)
         }
         addSlot(LocalTime.of(12, 0), Indicator.KRX_GOLD_1G)
+        addSlot(LocalTime.of(12, 0), Indicator.BTC_USD)
+        addSlot(LocalTime.of(12, 0), Indicator.BTC_MVRV)
         for (hour in 9..15) {
             addSlot(LocalTime.of(hour, 0), Indicator.KOSPI)
         }
