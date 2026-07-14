@@ -6,14 +6,14 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CnnFearGreedProviderTest {
     @Test
     fun `parses cnn fear greed score`() = runTest {
-        val server = MockWebServer()
-        server.enqueue(
+        val result = fetch(
             MockResponse().setBody(
                 """
                 {
@@ -26,15 +26,57 @@ class CnnFearGreedProviderTest {
                 """.trimIndent(),
             ),
         )
-        server.start()
-
-        val provider = CnnFearGreedProvider(baseUrl = server.url("/").toString())
-        val result = provider.fetch(Indicator.CNN_FEAR_GREED)
 
         assertTrue(result is ProviderResult.Success)
         val quote = (result as ProviderResult.Success).quote
         assertEquals(44.0, quote.value, 0.001)
         assertEquals(-3.0, quote.change, 0.001)
-        server.shutdown()
+    }
+
+    @Test
+    fun `empty payload is a non-retryable failure`() = runTest {
+        val result = fetch(MockResponse().setBody("{}"))
+
+        assertFailure(result, retryable = false)
+    }
+
+    @Test
+    fun `empty response body is a non-retryable failure`() = runTest {
+        val result = fetch(MockResponse().setBody(""))
+
+        assertFailure(result, retryable = false)
+    }
+
+    @Test
+    fun `server error is retryable`() = runTest {
+        val result = fetch(MockResponse().setResponseCode(503))
+
+        assertFailure(result, retryable = true, reason = "http-503")
+    }
+
+    @Test
+    fun `permanent HTTP response is not retryable`() = runTest {
+        val result = fetch(MockResponse().setResponseCode(404))
+
+        assertFailure(result, retryable = false, reason = "http-404")
+    }
+
+    private suspend fun fetch(response: MockResponse): ProviderResult {
+        val server = MockWebServer()
+        server.enqueue(response)
+        server.start()
+        return try {
+            CnnFearGreedProvider(baseUrl = server.url("/").toString()).fetch(Indicator.CNN_FEAR_GREED)
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    private fun assertFailure(result: ProviderResult, retryable: Boolean, reason: String? = null) {
+        assertTrue(result is ProviderResult.Failure)
+        result as ProviderResult.Failure
+        assertEquals(retryable, result.retryable)
+        reason?.let { assertEquals(it, result.reason) }
+        if (!retryable) assertFalse(result.retryable)
     }
 }

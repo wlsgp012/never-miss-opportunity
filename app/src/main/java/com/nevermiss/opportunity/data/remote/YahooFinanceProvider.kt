@@ -34,9 +34,9 @@ class YahooFinanceProvider(
         return runCatching {
             val response = api.chart(symbol)
             val meta = response.chart.result?.firstOrNull()?.meta
-                ?: return ProviderResult.Failure(indicator, "empty-chart", retryable = true)
+                ?: return ProviderResult.Failure(indicator, "empty-chart", retryable = false)
             val value = meta.regularMarketPrice
-                ?: return ProviderResult.Failure(indicator, "missing-price", retryable = true)
+                ?: return ProviderResult.Failure(indicator, "missing-price", retryable = false)
             val previous = meta.previousClose ?: meta.chartPreviousClose ?: value
             val change = value - previous
             val percent = if (previous == 0.0) null else (change / previous) * 100.0
@@ -51,9 +51,7 @@ class YahooFinanceProvider(
                     state = QuoteState.FRESH,
                 ),
             )
-        }.getOrElse {
-            ProviderResult.Failure(indicator, it.javaClass.simpleName, retryable = true)
-        }
+        }.getOrElse { ProviderFailureClassifier.failureFor(indicator, it) }
     }
 }
 

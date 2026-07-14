@@ -50,8 +50,11 @@ class DefaultMarketRepository(
         indicators.forEach { indicator ->
             when (val result = provider.fetch(indicator)) {
                 is ProviderResult.Success -> {
-                    successes += result.quote
-                    dao.insertQuote(result.quote.toEntity())
+                    val quote = result.quote.copy(
+                        state = QuoteFreshness.stateFor(result.quote, clockMillis()),
+                    )
+                    dao.insertQuote(quote.toEntity())
+                    if (quote.state == QuoteState.FRESH) successes += quote
                 }
                 is ProviderResult.Failure -> {
                     failures += result

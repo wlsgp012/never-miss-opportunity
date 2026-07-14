@@ -19,4 +19,51 @@ class MarketFetchWorkerTest {
         assertTrue(MarketFetchWorker.shouldPostNotification(success))
         assertFalse(MarketFetchWorker.shouldPostNotification(failure))
     }
+
+    @Test
+    fun `notification skips source-stale successes`() {
+        val stale = quote(QuoteState.STALE)
+        val result = RefreshResult("0900", listOf(stale), emptyList())
+
+        assertFalse(MarketFetchWorker.shouldPostNotification(result))
+    }
+
+    @Test
+    fun `all retryable failures request retry`() {
+        val result = RefreshResult(
+            "0900",
+            emptyList(),
+            listOf(
+                ProviderResult.Failure(Indicator.USD_KRW, "network", retryable = true),
+                ProviderResult.Failure(Indicator.KOSPI, "http-503", retryable = true),
+            ),
+        )
+
+        assertTrue(MarketFetchWorker.shouldRetry(result))
+    }
+
+    @Test
+    fun `partial success does not request retry`() {
+        val result = RefreshResult(
+            "0900",
+            listOf(quote(QuoteState.FRESH)),
+            listOf(ProviderResult.Failure(Indicator.KOSPI, "network", retryable = true)),
+        )
+
+        assertFalse(MarketFetchWorker.shouldRetry(result))
+    }
+
+    @Test
+    fun `all non-retryable failures do not request retry`() {
+        val result = RefreshResult(
+            "0900",
+            emptyList(),
+            listOf(ProviderResult.Failure(Indicator.KOSPI, "empty-chart", retryable = false)),
+        )
+
+        assertFalse(MarketFetchWorker.shouldRetry(result))
+    }
+
+    private fun quote(state: QuoteState) =
+        MarketQuote(Indicator.USD_KRW, 1382.4, 2.1, 0.15, 1_725_000_000_000, "Test", state)
 }

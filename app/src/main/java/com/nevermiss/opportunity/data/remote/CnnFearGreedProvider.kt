@@ -46,9 +46,7 @@ class CnnFearGreedProvider(
                     state = QuoteState.FRESH,
                 ),
             )
-        }.getOrElse {
-            ProviderResult.Failure(indicator, it.javaClass.simpleName, retryable = true)
-        }
+        }.getOrElse { ProviderFailureClassifier.failureFor(indicator, it) }
     }
 }
 

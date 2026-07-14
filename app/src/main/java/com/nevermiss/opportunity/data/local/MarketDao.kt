@@ -15,9 +15,17 @@ interface MarketDao {
 
     @Query(
         """
-        SELECT * FROM indicator_quotes
-        WHERE id IN (
-            SELECT MAX(id) FROM indicator_quotes GROUP BY indicator
+        SELECT * FROM indicator_quotes AS quote
+        WHERE NOT EXISTS (
+            SELECT 1 FROM indicator_quotes AS newer
+            WHERE newer.indicator = quote.indicator
+              AND (
+                newer.observedAtEpochMillis > quote.observedAtEpochMillis
+                OR (
+                    newer.observedAtEpochMillis = quote.observedAtEpochMillis
+                    AND newer.id > quote.id
+                )
+              )
         )
         """,
     )
@@ -25,9 +33,17 @@ interface MarketDao {
 
     @Query(
         """
-        SELECT * FROM indicator_quotes
-        WHERE id IN (
-            SELECT MAX(id) FROM indicator_quotes GROUP BY indicator
+        SELECT * FROM indicator_quotes AS quote
+        WHERE NOT EXISTS (
+            SELECT 1 FROM indicator_quotes AS newer
+            WHERE newer.indicator = quote.indicator
+              AND (
+                newer.observedAtEpochMillis > quote.observedAtEpochMillis
+                OR (
+                    newer.observedAtEpochMillis = quote.observedAtEpochMillis
+                    AND newer.id > quote.id
+                )
+              )
         )
         """,
     )

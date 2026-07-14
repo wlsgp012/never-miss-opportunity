@@ -25,12 +25,37 @@ class DefaultMarketRepositoryTest {
     fun `refresh persists successful provider quotes`() = runTest {
         val quote = quote(Indicator.USD_KRW)
         val dao = FakeMarketDao()
-        val repository = DefaultMarketRepository(dao, providerReturning(ProviderResult.Success(quote)))
+        val repository = DefaultMarketRepository(
+            dao,
+            providerReturning(ProviderResult.Success(quote)),
+            clockMillis = { quote.observedAtEpochMillis },
+        )
 
         val result = repository.refreshIndicators(listOf(Indicator.USD_KRW), "0900")
 
         assertEquals(listOf(quote), result.successes)
         assertEquals(listOf(quote), dao.insertedQuotes.map { it.toMarketQuote() })
+    }
+
+    @Test
+    fun `refresh persists source-stale quote but excludes it from successes`() = runTest {
+        val now = 1_725_000_000_000
+        val sourceStaleQuote = quote(
+            Indicator.USD_KRW,
+            observedAtEpochMillis = now - 91 * MINUTE,
+        )
+        val dao = FakeMarketDao()
+        val repository = DefaultMarketRepository(
+            dao,
+            providerReturning(ProviderResult.Success(sourceStaleQuote)),
+            clockMillis = { now },
+        )
+
+        val result = repository.refreshIndicators(listOf(Indicator.USD_KRW), "0900")
+
+        assertTrue(result.successes.isEmpty())
+        assertEquals(QuoteState.STALE, dao.insertedQuotes.single().state)
+        assertEquals(QuoteState.STALE, repository.latestQuotes().getValue(Indicator.USD_KRW).state)
     }
 
     @Test

@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.nevermiss.opportunity.AppGraph
 import com.nevermiss.opportunity.data.RefreshResult
 import com.nevermiss.opportunity.domain.MarketSchedule
+import com.nevermiss.opportunity.domain.QuoteState
 
 class MarketFetchWorker(
     context: Context,
@@ -21,12 +22,16 @@ class MarketFetchWorker(
         }
         graph.scheduler.scheduleAll()
         // Partial successes are treated as success to avoid duplicate notifications on retry.
-        return if (refresh.failures.any { it.retryable } && refresh.successes.isEmpty()) Result.retry() else Result.success()
+        return if (shouldRetry(refresh)) Result.retry() else Result.success()
     }
 
     companion object {
         const val KEY_SLOT_ID = "slot_id"
 
-        fun shouldPostNotification(result: RefreshResult): Boolean = result.successes.isNotEmpty()
+        fun shouldPostNotification(result: RefreshResult): Boolean =
+            result.successes.any { it.state == QuoteState.FRESH }
+
+        fun shouldRetry(result: RefreshResult): Boolean =
+            result.successes.isEmpty() && result.failures.any { it.retryable }
     }
 }

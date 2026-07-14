@@ -23,9 +23,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nevermiss.opportunity.domain.MovementFormatter
 import com.nevermiss.opportunity.domain.QuoteState
+import com.nevermiss.opportunity.ui.theme.MarketGreen
+import com.nevermiss.opportunity.ui.theme.MarketRed
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +81,14 @@ private fun MarketIndicatorRow(row: MarketRowState) {
             Text(quote?.let { MovementFormatter.value(it) } ?: "--")
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(quote?.let { MovementFormatter.movement(it) } ?: "No data")
+            Text(
+                text = quote?.let { MovementFormatter.movement(it) } ?: "No data",
+                color = when {
+                    quote == null || quote.change == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant
+                    quote.change > 0.0 -> MarketGreen
+                    else -> MarketRed
+                },
+            )
             Text(row.statusText())
         }
         Text(
@@ -95,4 +105,6 @@ internal fun MarketRowState.statusText(): String =
 private val QuoteState.label: String
     get() = name.lowercase().replaceFirstChar { it.titlecase(Locale.US) }
 
-private val timeFormatter = SimpleDateFormat("HH:mm", Locale.KOREA)
+private val timeFormatter = SimpleDateFormat("HH:mm", Locale.KOREA).apply {
+    timeZone = TimeZone.getTimeZone("Asia/Seoul")
+}
