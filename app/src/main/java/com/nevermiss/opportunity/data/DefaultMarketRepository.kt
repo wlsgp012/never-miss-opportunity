@@ -21,12 +21,15 @@ class DefaultMarketRepository(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeLatestQuotes(): Flow<Map<Indicator, MarketQuote>> =
         dao.observeLatestQuotes().transformLatest { rows ->
-            emit(rows.toLatestQuoteMap())
-            rows
-                .map { it.toDomain() }
-                .mapNotNull { QuoteFreshness.millisUntilStateChange(it, clockMillis()) }
-                .minOrNull()
-                ?.let { delay(it); emit(rows.toLatestQuoteMap()) }
+            while (true) {
+                emit(rows.toLatestQuoteMap())
+                val nextStateChangeMillis = rows
+                    .map { it.toDomain() }
+                    .mapNotNull { QuoteFreshness.millisUntilStateChange(it, clockMillis()) }
+                    .minOrNull()
+                    ?: break
+                delay(nextStateChangeMillis)
+            }
         }
 
     override suspend fun latestQuotes(): Map<Indicator, MarketQuote> =

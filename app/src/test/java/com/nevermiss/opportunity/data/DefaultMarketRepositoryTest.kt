@@ -113,6 +113,56 @@ class DefaultMarketRepositoryTest {
         assertTrue(collection.isCompleted)
     }
 
+    @Test
+    fun `observed quotes become stale at each staggered expiry without database writes`() = runTest {
+        val dao = FakeMarketDao(
+            listOf(
+                quote(Indicator.USD_KRW, observedAtEpochMillis = 0).toEntity(id = 1),
+                quote(Indicator.KOSPI, observedAtEpochMillis = MINUTE).toEntity(id = 2),
+            ),
+        )
+        val repository = DefaultMarketRepository(
+            dao,
+            providerReturning(),
+            clockMillis = { testScheduler.currentTime + 89 * MINUTE },
+        )
+        val states = mutableListOf<Map<Indicator, QuoteState>>()
+        val collection = launch {
+            repository.observeLatestQuotes().take(3).collect { quotes ->
+                states += quotes.mapValues { it.value.state }
+            }
+        }
+
+        runCurrent()
+        assertEquals(
+            listOf(mapOf(Indicator.USD_KRW to QuoteState.FRESH, Indicator.KOSPI to QuoteState.FRESH)),
+            states,
+        )
+
+        advanceTimeBy(MINUTE + 1)
+        runCurrent()
+        assertEquals(
+            listOf(
+                mapOf(Indicator.USD_KRW to QuoteState.FRESH, Indicator.KOSPI to QuoteState.FRESH),
+                mapOf(Indicator.USD_KRW to QuoteState.STALE, Indicator.KOSPI to QuoteState.FRESH),
+            ),
+            states,
+        )
+
+        advanceTimeBy(MINUTE)
+        runCurrent()
+
+        assertEquals(
+            listOf(
+                mapOf(Indicator.USD_KRW to QuoteState.FRESH, Indicator.KOSPI to QuoteState.FRESH),
+                mapOf(Indicator.USD_KRW to QuoteState.STALE, Indicator.KOSPI to QuoteState.FRESH),
+                mapOf(Indicator.USD_KRW to QuoteState.STALE, Indicator.KOSPI to QuoteState.STALE),
+            ),
+            states,
+        )
+        assertTrue(collection.isCompleted)
+    }
+
     private fun providerReturning(result: ProviderResult? = null) = MarketDataProvider { indicator ->
         result ?: ProviderResult.Failure(indicator, "unexpected", retryable = false)
     }
