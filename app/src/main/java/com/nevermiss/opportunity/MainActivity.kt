@@ -9,6 +9,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -30,12 +33,15 @@ class MainActivity : ComponentActivity() {
                 },
             )
             val state by viewModel.uiState.collectAsState()
-            val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+            var notificationsEnabled by remember { mutableStateOf(graph.notifications.canPostNotifications()) }
+            val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+                notificationsEnabled = graph.notifications.canPostNotifications()
+            }
 
             MarketAlertTheme {
                 MarketDashboardScreen(
                     state = state,
-                    notificationsEnabled = graph.notifications.canPostNotifications(),
+                    notificationsEnabled = notificationsEnabled,
                     onEnableNotifications = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

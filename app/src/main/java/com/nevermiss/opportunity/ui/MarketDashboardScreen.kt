@@ -79,7 +79,7 @@ private fun MarketIndicatorRow(row: MarketRowState) {
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(quote?.let { MovementFormatter.movement(it) } ?: "No data")
-            Text(quote?.let { "${it.state.label} · ${it.source}" } ?: QuoteState.UNAVAILABLE.label)
+            Text(row.statusText())
         }
         Text(
             text = quote?.let { "Updated ${timeFormatter.format(Date(it.observedAtEpochMillis))}" } ?: "Waiting for first update",
@@ -87,6 +87,10 @@ private fun MarketIndicatorRow(row: MarketRowState) {
         )
     }
 }
+
+internal fun MarketRowState.statusText(): String =
+    quote?.let { "${it.state.label} · ${it.source}" }
+        ?: "${QuoteState.UNAVAILABLE.label} · ${indicator.sourceLabel}"
 
 private val QuoteState.label: String
     get() = name.lowercase().replaceFirstChar { it.titlecase(Locale.US) }

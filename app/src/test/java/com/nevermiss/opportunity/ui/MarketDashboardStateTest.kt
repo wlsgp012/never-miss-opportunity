@@ -11,4 +11,14 @@ class MarketDashboardStateTest {
 
         assertEquals(Indicator.displayOrder, rows)
     }
+
+    @Test
+    fun `empty row status includes its configured source and unavailable state`() {
+        val row = MarketRowState(Indicator.USD_KRW, quote = null)
+
+        assertEquals(
+            "Unavailable · ${Indicator.USD_KRW.sourceLabel}",
+            row.statusText(),
+        )
+    }
 }
