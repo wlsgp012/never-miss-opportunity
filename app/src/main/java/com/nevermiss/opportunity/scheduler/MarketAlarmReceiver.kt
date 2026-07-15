@@ -6,11 +6,13 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.nevermiss.opportunity.AppGraph
 import com.nevermiss.opportunity.worker.MarketFetchWorker
 
 class MarketAlarmReceiver : android.content.BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val slotId = intent.getStringExtra(EXTRA_SLOT_ID) ?: return
+        AppGraph.get(context).scheduler.scheduleSlot(slotId)
         val request = OneTimeWorkRequestBuilder<MarketFetchWorker>()
             .setInputData(workDataOf(MarketFetchWorker.KEY_SLOT_ID to slotId))
             .build()

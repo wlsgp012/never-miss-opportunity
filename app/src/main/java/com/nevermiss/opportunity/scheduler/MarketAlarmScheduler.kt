@@ -4,26 +4,27 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.nevermiss.opportunity.domain.MarketSchedule
 import java.time.ZonedDateTime
 
-class MarketAlarmScheduler(private val context: Context) {
-    private val alarmManager = context.getSystemService(AlarmManager::class.java)
+internal fun interface AlarmSetter {
+    fun schedule(slotId: String, triggerAtEpochMillis: Long)
+}
+
+class MarketAlarmScheduler internal constructor(private val alarmSetter: AlarmSetter) {
+    constructor(context: Context) : this(AndroidAlarmSetter(context))
 
     fun scheduleAll(now: ZonedDateTime = ZonedDateTime.now(MarketSchedule.zoneId)) {
         MarketSchedule.dailySlots.forEach { slot ->
-            val triggerAt = nextOccurrence(now, slot.time).toInstant().toEpochMilli()
-            alarmManager.set(
-                AlarmManager.RTC_WAKEUP,
-                triggerAt,
-                pendingIntent(slot.id),
-            )
+            scheduleSlot(slot.id, now)
         }
     }
 
-    private fun pendingIntent(slotId: String): PendingIntent {
-        val intent = Intent(context, MarketAlarmReceiver::class.java).putExtra(MarketAlarmReceiver.EXTRA_SLOT_ID, slotId)
-        return PendingIntent.getBroadcast(context, slotId.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    fun scheduleSlot(slotId: String, now: ZonedDateTime = ZonedDateTime.now(MarketSchedule.zoneId)) {
+        val slot = MarketSchedule.dailySlots.firstOrNull { it.id == slotId } ?: return
+        val triggerAt = nextOccurrence(now, slot.time).toInstant().toEpochMilli()
+        alarmSetter.schedule(slot.id, triggerAt)
     }
 
     companion object {
@@ -31,5 +32,49 @@ class MarketAlarmScheduler(private val context: Context) {
             val today = now.toLocalDate().atTime(time).atZone(MarketSchedule.zoneId)
             return if (today.isAfter(now)) today else today.plusDays(1)
         }
+    }
+}
+
+private class AndroidAlarmSetter(context: Context) : AlarmSetter {
+    private val appContext = context.applicationContext
+    private val alarmManager = appContext.getSystemService(AlarmManager::class.java)
+
+    override fun schedule(slotId: String, triggerAtEpochMillis: Long) {
+        val operation = pendingIntent(slotId)
+        if (canScheduleExactAlarm()) {
+            runCatching {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtEpochMillis,
+                    operation,
+                )
+            }.getOrElse {
+                scheduleAllowWhileIdle(triggerAtEpochMillis, operation)
+            }
+        } else {
+            scheduleAllowWhileIdle(triggerAtEpochMillis, operation)
+        }
+    }
+
+    private fun scheduleAllowWhileIdle(triggerAtEpochMillis: Long, operation: PendingIntent) {
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerAtEpochMillis,
+            operation,
+        )
+    }
+
+    private fun canScheduleExactAlarm(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+
+    private fun pendingIntent(slotId: String): PendingIntent {
+        val intent = Intent(appContext, MarketAlarmReceiver::class.java)
+            .putExtra(MarketAlarmReceiver.EXTRA_SLOT_ID, slotId)
+        return PendingIntent.getBroadcast(
+            appContext,
+            slotId.hashCode(),
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
     }
 }

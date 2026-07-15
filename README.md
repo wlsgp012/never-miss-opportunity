@@ -74,6 +74,6 @@ Yahoo Finance, CNN, CoinMetrics 데이터는 공개 또는 비공식 엔드포�
 ## 참고 사항
 
 - Android 13 이상에서는 알림 표시 전에 notification permission이 필요합니다.
-- 기본 알람은 inexact alarm으로 등록됩니다.
+- 알람은 exact alarm이 허용된 기기에서는 `setExactAndAllowWhileIdle`로 예약하고, 허용되지 않으면 `setAndAllowWhileIdle`로 fallback합니다.
 - RSI는 Yahoo Finance의 1개월 일봉 종가를 기준으로 14-period RSI를 계산합니다.
 - 기존 설치본에서 `1.0.2`로 업데이트할 때 Room DB는 `1 -> 2` 마이그레이션으로 보조 신호 필드를 추가합니다.

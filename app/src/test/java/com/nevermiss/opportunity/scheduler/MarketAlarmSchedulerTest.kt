@@ -8,6 +8,22 @@ import java.time.ZonedDateTime
 
 class MarketAlarmSchedulerTest {
     @Test
+    fun `schedule slot schedules only that slot for its next occurrence`() {
+        val scheduled = mutableListOf<Pair<String, Long>>()
+        val scheduler = MarketAlarmScheduler { slotId, triggerAtEpochMillis ->
+            scheduled += slotId to triggerAtEpochMillis
+        }
+        val now = ZonedDateTime.of(2026, 7, 14, 9, 1, 0, 0, MarketSchedule.zoneId)
+
+        scheduler.scheduleSlot("0900", now)
+
+        val expected = ZonedDateTime.of(2026, 7, 15, 9, 0, 0, 0, MarketSchedule.zoneId)
+            .toInstant()
+            .toEpochMilli()
+        assertEquals(listOf("0900" to expected), scheduled)
+    }
+
+    @Test
     fun `next occurrence uses today when slot is still ahead`() {
         val now = ZonedDateTime.of(2026, 7, 14, 8, 30, 0, 0, MarketSchedule.zoneId)
 
