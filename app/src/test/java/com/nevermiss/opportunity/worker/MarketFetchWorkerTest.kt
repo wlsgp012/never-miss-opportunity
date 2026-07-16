@@ -3,11 +3,13 @@ package com.nevermiss.opportunity.worker
 import com.nevermiss.opportunity.data.ProviderResult
 import com.nevermiss.opportunity.data.RefreshResult
 import com.nevermiss.opportunity.domain.Indicator
+import com.nevermiss.opportunity.domain.MarketSchedule
 import com.nevermiss.opportunity.domain.MarketQuote
 import com.nevermiss.opportunity.domain.QuoteState
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.ZonedDateTime
 
 class MarketFetchWorkerTest {
     @Test
@@ -26,6 +28,14 @@ class MarketFetchWorkerTest {
         val result = RefreshResult("0900", listOf(stale), emptyList())
 
         assertFalse(MarketFetchWorker.shouldPostNotification(result))
+    }
+
+    @Test
+    fun `notification skips weekends`() {
+        val result = RefreshResult("0900", listOf(quote(QuoteState.FRESH)), emptyList())
+        val saturday = ZonedDateTime.of(2026, 7, 18, 9, 0, 0, 0, MarketSchedule.zoneId)
+
+        assertFalse(MarketFetchWorker.shouldPostNotification(result, saturday))
     }
 
     @Test

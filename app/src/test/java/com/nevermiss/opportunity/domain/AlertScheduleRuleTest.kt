@@ -23,6 +23,14 @@ class AlertScheduleRuleTest {
     }
 
     @Test
+    fun `fixed rule skips weekends`() {
+        val rule = AlertScheduleRule.fixed("rule-1", Indicator.KOSPI, secondOfDay(9, 0))
+        val now = at(2026, 7, 17, 9, 1, 0)
+
+        assertEquals(at(2026, 7, 20, 9, 0, 0), rule.nextOccurrence(now))
+    }
+
+    @Test
     fun `recurring rule returns range start when range is ahead`() {
         val rule = AlertScheduleRule.recurring(
             id = "rule-1",
@@ -62,6 +70,20 @@ class AlertScheduleRuleTest {
         val now = at(2026, 7, 15, 12, 0, 10)
 
         assertEquals(at(2026, 7, 15, 12, 0, 30), rule.nextOccurrence(now))
+    }
+
+    @Test
+    fun `recurring rule skips weekends`() {
+        val rule = AlertScheduleRule.recurring(
+            id = "rule-1",
+            indicator = Indicator.USD_KRW,
+            startSecondOfDay = secondOfDay(9, 0),
+            endSecondOfDay = secondOfDay(21, 0),
+            intervalSeconds = 3600,
+        )
+        val now = at(2026, 7, 17, 21, 0, 0)
+
+        assertEquals(at(2026, 7, 20, 9, 0, 0), rule.nextOccurrence(now))
     }
 
     @Test

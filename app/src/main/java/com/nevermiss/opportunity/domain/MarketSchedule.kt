@@ -2,6 +2,7 @@ package com.nevermiss.opportunity.domain
 
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 data class ScheduleSlot(
     val id: String,
@@ -49,6 +50,21 @@ object MarketSchedule {
 
     fun slotAt(time: LocalTime): ScheduleSlot =
         dailySlots.first { it.time == time }
+
+    fun isAlertDay(dateTime: ZonedDateTime): Boolean =
+        when (dateTime.dayOfWeek) {
+            java.time.DayOfWeek.SATURDAY,
+            java.time.DayOfWeek.SUNDAY -> false
+            else -> true
+        }
+
+    fun nextAlertDateTime(dateTime: ZonedDateTime): ZonedDateTime {
+        var candidate = dateTime
+        while (!isAlertDay(candidate)) {
+            candidate = candidate.plusDays(1)
+        }
+        return candidate
+    }
 
     private fun MutableList<ScheduleSlot>.addSlot(time: LocalTime, indicator: Indicator) {
         add(ScheduleSlot(id = "%02d%02d-%s".format(time.hour, time.minute, indicator.name), time = time, indicators = listOf(indicator)))

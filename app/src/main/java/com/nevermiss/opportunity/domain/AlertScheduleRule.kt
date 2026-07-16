@@ -47,11 +47,12 @@ data class AlertScheduleRule(
             }
         }
 
-        return if (todayNextSecond != null && todayNextSecond <= end) {
+        val candidate = if (todayNextSecond != null && todayNextSecond <= end) {
             atSecondOfDay(now.toLocalDate(), todayNextSecond)
         } else {
             atSecondOfDay(now.toLocalDate().plusDays(1), start)
         }
+        return MarketSchedule.nextAlertDateTime(candidate)
     }
 
     companion object {
@@ -91,7 +92,8 @@ data class AlertScheduleRule(
 
 fun nextFixed(now: ZonedDateTime, secondOfDay: Int): ZonedDateTime {
     val today = atSecondOfDay(now.toLocalDate(), secondOfDay)
-    return if (today.isAfter(now)) today else today.plusDays(1)
+    val candidate = if (today.isAfter(now)) today else today.plusDays(1)
+    return MarketSchedule.nextAlertDateTime(candidate)
 }
 
 fun atSecondOfDay(date: LocalDate, secondOfDay: Int): ZonedDateTime =

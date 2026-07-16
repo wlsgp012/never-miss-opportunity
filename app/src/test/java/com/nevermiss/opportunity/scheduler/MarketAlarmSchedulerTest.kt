@@ -48,4 +48,15 @@ class MarketAlarmSchedulerTest {
         assertEquals(15, next.dayOfMonth)
         assertEquals(LocalTime.of(9, 0), next.toLocalTime())
     }
+
+    @Test
+    fun `next occurrence skips weekends`() {
+        val now = ZonedDateTime.of(2026, 7, 17, 23, 50, 0, 0, MarketSchedule.zoneId)
+
+        val next = MarketAlarmScheduler.nextOccurrence(now, LocalTime.of(9, 0))
+
+        assertEquals(2026, next.year)
+        assertEquals(20, next.dayOfMonth)
+        assertEquals(LocalTime.of(9, 0), next.toLocalTime())
+    }
 }

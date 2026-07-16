@@ -39,7 +39,8 @@ class MarketAlarmScheduler internal constructor(
     companion object {
         fun nextOccurrence(now: ZonedDateTime, time: java.time.LocalTime): ZonedDateTime {
             val today = now.toLocalDate().atTime(time).atZone(MarketSchedule.zoneId)
-            return if (today.isAfter(now)) today else today.plusDays(1)
+            val candidate = if (today.isAfter(now)) today else today.plusDays(1)
+            return MarketSchedule.nextAlertDateTime(candidate)
         }
     }
 }
