@@ -16,6 +16,7 @@
   - 특정 시각 알림 추가
   - 시간 범위 안에서 초/분/시간 단위 반복 알림 추가
   - 규칙별 활성화/일시정지 및 삭제
+- 현재 알림 규칙을 JSON 파일로 export/import
 - 알림 권한이 꺼져 있을 때 앱 화면에서 권한 요청 가능
 - 마지막 조회값을 로컬 Room DB에 저장하고, 오래된 값은 stale 상태로 표시
 
@@ -82,5 +83,6 @@ Yahoo Finance, CNN, CoinMetrics 데이터는 공개 또는 비공식 엔드포�
 - Android 13 이상에서는 알림 표시 전에 notification permission이 필요합니다.
 - 알람은 exact alarm이 허용된 기기에서는 `setExactAndAllowWhileIdle`로 예약하고, 허용되지 않으면 `setAndAllowWhileIdle`로 fallback합니다.
 - 사용자 알림 규칙은 SharedPreferences에 JSON으로 저장되어 알람 receiver에서도 즉시 읽을 수 있습니다.
+- 알림 규칙 export/import 파일은 `version`과 `rules` 필드를 가진 JSON 형식입니다.
 - RSI는 Yahoo Finance의 1개월 일봉 종가를 기준으로 14-period RSI를 계산합니다.
 - 기존 설치본에서 `1.0.2`로 업데이트할 때 Room DB는 `1 -> 2` 마이그레이션으로 보조 신호 필드를 추가합니다.

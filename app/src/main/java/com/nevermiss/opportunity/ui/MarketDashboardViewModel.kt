@@ -108,6 +108,14 @@ class MarketDashboardViewModel(
         scheduler.scheduleAll()
     }
 
+    fun exportScheduleJson(): String = scheduleStore.exportJson()
+
+    fun importScheduleJson(rawJson: String): Boolean {
+        val imported = scheduleStore.importJson(rawJson)
+        if (imported) scheduler.scheduleAll()
+        return imported
+    }
+
     private fun newRuleId(indicator: Indicator): String =
         "user-${indicator.name.lowercase()}-${System.currentTimeMillis()}"
 }

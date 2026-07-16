@@ -1,8 +1,10 @@
 package com.nevermiss.opportunity
 
 import android.Manifest
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -34,8 +36,23 @@ class MainActivity : ComponentActivity() {
             )
             val state by viewModel.uiState.collectAsState()
             var notificationsEnabled by remember { mutableStateOf(graph.notifications.canPostNotifications()) }
+            var pendingExportJson by remember { mutableStateOf<String?>(null) }
             val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
                 notificationsEnabled = graph.notifications.canPostNotifications()
+            }
+            val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+                val json = pendingExportJson
+                pendingExportJson = null
+                if (uri != null && json != null) {
+                    val exported = writeText(uri, json)
+                    Toast.makeText(this, if (exported) "Schedule exported" else "Export failed", Toast.LENGTH_SHORT).show()
+                }
+            }
+            val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri != null) {
+                    val imported = readText(uri)?.let(viewModel::importScheduleJson) == true
+                    Toast.makeText(this, if (imported) "Schedule imported" else "Import failed", Toast.LENGTH_SHORT).show()
+                }
             }
 
             MarketAlertTheme {
@@ -48,6 +65,13 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onRefresh = viewModel::refreshAll,
+                    onExportSchedules = {
+                        pendingExportJson = viewModel.exportScheduleJson()
+                        exportLauncher.launch("market-alert-schedules.json")
+                    },
+                    onImportSchedules = {
+                        importLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                    },
                     onAddFixedRule = viewModel::addFixedRule,
                     onAddRecurringRule = viewModel::addRecurringRule,
                     onToggleRule = viewModel::toggleRule,
@@ -56,4 +80,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun writeText(uri: Uri, text: String): Boolean =
+        runCatching {
+            contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(text.toByteArray(Charsets.UTF_8))
+            } != null
+        }.getOrDefault(false)
+
+    private fun readText(uri: Uri): String? =
+        runCatching {
+            contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+        }.getOrNull()
 }

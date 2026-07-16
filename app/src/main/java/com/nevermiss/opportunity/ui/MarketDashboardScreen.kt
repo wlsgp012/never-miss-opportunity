@@ -56,6 +56,8 @@ fun MarketDashboardScreen(
     notificationsEnabled: Boolean,
     onEnableNotifications: () -> Unit,
     onRefresh: () -> Unit,
+    onExportSchedules: () -> Unit,
+    onImportSchedules: () -> Unit,
     onAddFixedRule: (Indicator, String) -> Boolean,
     onAddRecurringRule: (Indicator, String, String, String, Int) -> Boolean,
     onToggleRule: (AlertScheduleRule) -> Unit,
@@ -69,7 +71,11 @@ fun MarketDashboardScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Market Alerts") },
-                actions = { TextButton(onClick = onRefresh) { Text("Refresh") } },
+                actions = {
+                    TextButton(onClick = onImportSchedules) { Text("Import") }
+                    TextButton(onClick = onExportSchedules) { Text("Export") }
+                    TextButton(onClick = onRefresh) { Text("Refresh") }
+                },
             )
         },
     ) { padding ->
