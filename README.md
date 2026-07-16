@@ -12,6 +12,10 @@
   - 예: `Fear`, `Extreme Fear`, `Greed`
 - S&P 500, Nasdaq 100, KOSPI, BTC/USD의 RSI 14 표시
 - Android 알림으로 조회 결과 전달
+- 지표별 알림 규칙 직접 설정
+  - 특정 시각 알림 추가
+  - 시간 범위 안에서 초/분/시간 단위 반복 알림 추가
+  - 규칙별 활성화/일시정지 및 삭제
 - 알림 권한이 꺼져 있을 때 앱 화면에서 권한 요청 가능
 - 마지막 조회값을 로컬 Room DB에 저장하고, 오래된 값은 stale 상태로 표시
 
@@ -32,6 +36,8 @@
 ## 알림 스케줄
 
 모든 시간은 `Asia/Seoul` 기준입니다.
+
+아래 스케줄은 최초 설치 시 자동으로 생성되는 기본 알림 규칙입니다. 앱 화면에서 각 지표의 `Alerts` 버튼을 눌러 규칙을 추가, 삭제, 일시정지할 수 있습니다.
 
 | 지표 | 조회 시간 |
 | --- | --- |
@@ -75,5 +81,6 @@ Yahoo Finance, CNN, CoinMetrics 데이터는 공개 또는 비공식 엔드포�
 
 - Android 13 이상에서는 알림 표시 전에 notification permission이 필요합니다.
 - 알람은 exact alarm이 허용된 기기에서는 `setExactAndAllowWhileIdle`로 예약하고, 허용되지 않으면 `setAndAllowWhileIdle`로 fallback합니다.
+- 사용자 알림 규칙은 SharedPreferences에 JSON으로 저장되어 알람 receiver에서도 즉시 읽을 수 있습니다.
 - RSI는 Yahoo Finance의 1개월 일봉 종가를 기준으로 14-period RSI를 계산합니다.
 - 기존 설치본에서 `1.0.2`로 업데이트할 때 Room DB는 `1 -> 2` 마이그레이션으로 보조 신호 필드를 추가합니다.

@@ -9,23 +9,36 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nevermiss.opportunity.domain.AlertScheduleFormatter
+import com.nevermiss.opportunity.domain.AlertScheduleRule
+import com.nevermiss.opportunity.domain.Indicator
 import com.nevermiss.opportunity.domain.MarketQuote
 import com.nevermiss.opportunity.domain.MovementFormatter
 import com.nevermiss.opportunity.domain.QuoteState
@@ -43,8 +56,14 @@ fun MarketDashboardScreen(
     notificationsEnabled: Boolean,
     onEnableNotifications: () -> Unit,
     onRefresh: () -> Unit,
+    onAddFixedRule: (Indicator, String) -> Boolean,
+    onAddRecurringRule: (Indicator, String, String, String, Int) -> Boolean,
+    onToggleRule: (AlertScheduleRule) -> Unit,
+    onDeleteRule: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var editingIndicator by remember { mutableStateOf<Indicator?>(null) }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -70,15 +89,28 @@ fun MarketDashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(state.rows, key = { it.indicator.name }) { row ->
-                    MarketIndicatorRow(row)
+                    MarketIndicatorRow(row, onEditSchedule = { editingIndicator = row.indicator })
                 }
             }
         }
     }
+
+    editingIndicator?.let { indicator ->
+        val row = state.rows.firstOrNull { it.indicator == indicator }
+            ?: MarketRowState(indicator, null)
+        ScheduleRulesDialog(
+            row = row,
+            onDismiss = { editingIndicator = null },
+            onAddFixedRule = onAddFixedRule,
+            onAddRecurringRule = onAddRecurringRule,
+            onToggleRule = onToggleRule,
+            onDeleteRule = onDeleteRule,
+        )
+    }
 }
 
 @Composable
-private fun MarketIndicatorRow(row: MarketRowState) {
+private fun MarketIndicatorRow(row: MarketRowState, onEditSchedule: () -> Unit) {
     val quote = row.quote
     val movementColor = when {
         quote == null || quote.change == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -112,12 +144,17 @@ private fun MarketIndicatorRow(row: MarketRowState) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Text(
-                    text = row.statusText(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.End,
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = row.statusText(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.End,
+                    )
+                    TextButton(onClick = onEditSchedule) {
+                        Text("Alerts ${row.scheduleRules.count { it.enabled }}/${row.scheduleRules.size}")
+                    }
+                }
             }
             Text(
                 text = quote?.let { MovementFormatter.value(it) } ?: "--",
@@ -159,6 +196,115 @@ private fun MarketIndicatorRow(row: MarketRowState) {
             }
         }
     }
+}
+
+@Composable
+private fun ScheduleRulesDialog(
+    row: MarketRowState,
+    onDismiss: () -> Unit,
+    onAddFixedRule: (Indicator, String) -> Boolean,
+    onAddRecurringRule: (Indicator, String, String, String, Int) -> Boolean,
+    onToggleRule: (AlertScheduleRule) -> Unit,
+    onDeleteRule: (String) -> Unit,
+) {
+    var fixedTime by remember(row.indicator) { mutableStateOf("09:00") }
+    var rangeStart by remember(row.indicator) { mutableStateOf("09:00") }
+    var rangeEnd by remember(row.indicator) { mutableStateOf("15:00") }
+    var intervalValue by remember(row.indicator) { mutableStateOf("1") }
+    var intervalUnit by remember(row.indicator) { mutableStateOf(IntervalUnit.HOUR) }
+    var errorText by remember(row.indicator) { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("${row.indicator.displayName} alerts") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                row.scheduleRules.forEach { rule ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(AlertScheduleFormatter.describe(rule), fontWeight = FontWeight.SemiBold)
+                            Text(if (rule.enabled) "Enabled" else "Paused", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Switch(checked = rule.enabled, onCheckedChange = { onToggleRule(rule) })
+                        TextButton(onClick = { onDeleteRule(rule.id) }) { Text("Delete") }
+                    }
+                }
+
+                HorizontalDivider()
+                Text("Add fixed time", fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = fixedTime,
+                        onValueChange = { fixedTime = it },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("HH:mm:ss") },
+                    )
+                    Button(onClick = {
+                        if (onAddFixedRule(row.indicator, fixedTime)) errorText = null else errorText = "Invalid fixed time"
+                    }) { Text("Add") }
+                }
+
+                HorizontalDivider()
+                Text("Add range", fontWeight = FontWeight.SemiBold)
+                OutlinedTextField(
+                    value = rangeStart,
+                    onValueChange = { rangeStart = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Start HH:mm:ss") },
+                )
+                OutlinedTextField(
+                    value = rangeEnd,
+                    onValueChange = { rangeEnd = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("End HH:mm:ss") },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = intervalValue,
+                        onValueChange = { intervalValue = it },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        label = { Text("Every") },
+                    )
+                    IntervalUnit.entries.forEach { unit ->
+                        TextButton(onClick = { intervalUnit = unit }) {
+                            Text(if (intervalUnit == unit) "[${unit.label}]" else unit.label)
+                        }
+                    }
+                }
+                Button(
+                    onClick = {
+                        if (onAddRecurringRule(row.indicator, rangeStart, rangeEnd, intervalValue, intervalUnit.seconds)) {
+                            errorText = null
+                        } else {
+                            errorText = "Invalid range or interval"
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Add range rule") }
+                errorText?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+}
+
+private enum class IntervalUnit(val label: String, val seconds: Int) {
+    SECOND("sec", 1),
+    MINUTE("min", 60),
+    HOUR("hour", 3600),
 }
 
 private fun MarketQuote.signalText(): String? {

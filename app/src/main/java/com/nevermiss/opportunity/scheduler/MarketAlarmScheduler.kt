@@ -5,6 +5,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.nevermiss.opportunity.data.local.AlertScheduleStore
+import com.nevermiss.opportunity.domain.AlertScheduleRule
 import com.nevermiss.opportunity.domain.MarketSchedule
 import java.time.ZonedDateTime
 
@@ -12,19 +14,26 @@ internal fun interface AlarmSetter {
     fun schedule(slotId: String, triggerAtEpochMillis: Long)
 }
 
-class MarketAlarmScheduler internal constructor(private val alarmSetter: AlarmSetter) {
-    constructor(context: Context) : this(AndroidAlarmSetter(context))
+class MarketAlarmScheduler internal constructor(
+    private val alarmSetter: AlarmSetter,
+    private val rulesProvider: () -> List<AlertScheduleRule>,
+) {
+    constructor(context: Context, scheduleStore: AlertScheduleStore) : this(AndroidAlarmSetter(context), scheduleStore::rules)
 
     fun scheduleAll(now: ZonedDateTime = ZonedDateTime.now(MarketSchedule.zoneId)) {
-        MarketSchedule.dailySlots.forEach { slot ->
-            scheduleSlot(slot.id, now)
+        rulesProvider().forEach { rule ->
+            scheduleRule(rule, now)
         }
     }
 
     fun scheduleSlot(slotId: String, now: ZonedDateTime = ZonedDateTime.now(MarketSchedule.zoneId)) {
-        val slot = MarketSchedule.dailySlots.firstOrNull { it.id == slotId } ?: return
-        val triggerAt = nextOccurrence(now, slot.time).toInstant().toEpochMilli()
-        alarmSetter.schedule(slot.id, triggerAt)
+        val rule = rulesProvider().firstOrNull { it.id == slotId } ?: return
+        scheduleRule(rule, now)
+    }
+
+    private fun scheduleRule(rule: AlertScheduleRule, now: ZonedDateTime) {
+        val triggerAt = rule.nextOccurrence(now)?.toInstant()?.toEpochMilli() ?: return
+        alarmSetter.schedule(rule.id, triggerAt)
     }
 
     companion object {

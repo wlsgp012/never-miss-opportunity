@@ -5,7 +5,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.nevermiss.opportunity.AppGraph
 import com.nevermiss.opportunity.data.RefreshResult
-import com.nevermiss.opportunity.domain.MarketSchedule
 import com.nevermiss.opportunity.domain.QuoteState
 
 class MarketFetchWorker(
@@ -14,9 +13,9 @@ class MarketFetchWorker(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val slotId = inputData.getString(KEY_SLOT_ID) ?: return Result.failure()
-        val slot = MarketSchedule.dailySlots.firstOrNull { it.id == slotId } ?: return Result.failure()
         val graph = AppGraph.get(applicationContext)
-        val refresh = graph.repository.refreshIndicators(slot.indicators, slot.id)
+        val rule = graph.scheduleStore.rule(slotId) ?: return Result.failure()
+        val refresh = graph.repository.refreshIndicators(listOf(rule.indicator), rule.id)
         if (shouldPostNotification(refresh)) {
             graph.notifications.showMarketUpdate(refresh)
         }

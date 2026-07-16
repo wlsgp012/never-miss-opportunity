@@ -1,5 +1,7 @@
 package com.nevermiss.opportunity.scheduler
 
+import com.nevermiss.opportunity.domain.AlertScheduleRule
+import com.nevermiss.opportunity.domain.Indicator
 import com.nevermiss.opportunity.domain.MarketSchedule
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -10,17 +12,19 @@ class MarketAlarmSchedulerTest {
     @Test
     fun `schedule slot schedules only that slot for its next occurrence`() {
         val scheduled = mutableListOf<Pair<String, Long>>()
-        val scheduler = MarketAlarmScheduler { slotId, triggerAtEpochMillis ->
-            scheduled += slotId to triggerAtEpochMillis
-        }
+        val rule = AlertScheduleRule.fixed("rule-0900", Indicator.KOSPI, 9 * 3600)
+        val scheduler = MarketAlarmScheduler(
+            alarmSetter = { slotId, triggerAtEpochMillis -> scheduled += slotId to triggerAtEpochMillis },
+            rulesProvider = { listOf(rule) },
+        )
         val now = ZonedDateTime.of(2026, 7, 14, 9, 1, 0, 0, MarketSchedule.zoneId)
 
-        scheduler.scheduleSlot("0900", now)
+        scheduler.scheduleSlot("rule-0900", now)
 
         val expected = ZonedDateTime.of(2026, 7, 15, 9, 0, 0, 0, MarketSchedule.zoneId)
             .toInstant()
             .toEpochMilli()
-        assertEquals(listOf("0900" to expected), scheduled)
+        assertEquals(listOf("rule-0900" to expected), scheduled)
     }
 
     @Test

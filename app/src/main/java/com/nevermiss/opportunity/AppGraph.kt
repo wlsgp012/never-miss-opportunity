@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.nevermiss.opportunity.data.DefaultMarketRepository
 import com.nevermiss.opportunity.data.MarketDataProvider
+import com.nevermiss.opportunity.data.local.SharedPreferencesAlertScheduleStore
 import com.nevermiss.opportunity.data.local.AppDatabase
 import com.nevermiss.opportunity.data.remote.BitcoinMvrvProvider
 import com.nevermiss.opportunity.data.remote.CnnFearGreedProvider
@@ -42,7 +43,8 @@ class AppGraph private constructor(context: Context) {
 
     val repository = DefaultMarketRepository(database.marketDao(), routedProvider)
     val notifications = MarketNotificationManager(appContext)
-    val scheduler = MarketAlarmScheduler(appContext)
+    val scheduleStore = SharedPreferencesAlertScheduleStore(appContext)
+    val scheduler = MarketAlarmScheduler(appContext, scheduleStore)
 
     companion object {
         @Volatile private var instance: AppGraph? = null

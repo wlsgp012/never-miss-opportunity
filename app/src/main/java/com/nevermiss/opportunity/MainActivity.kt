@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
                 factory = object : ViewModelProvider.Factory {
                     @Suppress("UNCHECKED_CAST")
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return MarketDashboardViewModel(graph.repository) as T
+                        return MarketDashboardViewModel(graph.repository, graph.scheduleStore, graph.scheduler) as T
                     }
                 },
             )
@@ -48,6 +48,10 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onRefresh = viewModel::refreshAll,
+                    onAddFixedRule = viewModel::addFixedRule,
+                    onAddRecurringRule = viewModel::addRecurringRule,
+                    onToggleRule = viewModel::toggleRule,
+                    onDeleteRule = viewModel::deleteRule,
                 )
             }
         }
