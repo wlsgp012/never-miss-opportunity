@@ -36,6 +36,7 @@ class AppGraph private constructor(context: Context) {
             Indicator.NASDAQ100,
             Indicator.VIX,
             Indicator.BTC_USD,
+            Indicator.WTI_CRUDE,
             Indicator.KOSPI -> yahooProvider
         }
         provider.fetch(indicator)

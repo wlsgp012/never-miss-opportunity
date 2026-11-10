@@ -18,6 +18,7 @@ object MarketSchedule {
             addSlot(LocalTime.of(hour, 0), Indicator.USD_KRW)
         }
         addSlot(LocalTime.of(9, 0), Indicator.CNN_FEAR_GREED)
+        addSlot(LocalTime.of(9, 0), Indicator.WTI_CRUDE)
         addSlot(LocalTime.of(23, 0), Indicator.CNN_FEAR_GREED)
         addSlot(LocalTime.of(8, 30), Indicator.SP500)
         addSlot(LocalTime.of(8, 30), Indicator.VIX)

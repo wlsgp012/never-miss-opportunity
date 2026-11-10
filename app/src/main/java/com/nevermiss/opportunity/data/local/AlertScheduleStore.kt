@@ -4,6 +4,7 @@ import android.content.Context
 import com.nevermiss.opportunity.domain.AlertScheduleRule
 import com.nevermiss.opportunity.domain.AlertScheduleRuleJson
 import com.nevermiss.opportunity.domain.DefaultAlertScheduleRules
+import com.nevermiss.opportunity.domain.Indicator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -23,8 +24,19 @@ class SharedPreferencesAlertScheduleStore(context: Context) : AlertScheduleStore
     private val rulesState = MutableStateFlow(loadRules())
 
     init {
-        if (!preferences.contains(KEY_RULES)) {
-            saveRules(DefaultAlertScheduleRules.rules)
+        if (!preferences.getBoolean(KEY_OIL_DEFAULT_ADDED, false)) {
+            val oilRule = DefaultAlertScheduleRules.rules.single { it.indicator == Indicator.WTI_CRUDE }
+            val migratedRules = if (rulesState.value.any { it.indicator == Indicator.WTI_CRUDE }) {
+                rulesState.value
+            } else {
+                rulesState.value + oilRule
+            }
+            // Persist the migration marker with the rules so deletions and imports stay intentional.
+            preferences.edit()
+                .putString(KEY_RULES, AlertScheduleRuleJson.exportRules(migratedRules))
+                .putBoolean(KEY_OIL_DEFAULT_ADDED, true)
+                .apply()
+            rulesState.value = migratedRules
         }
     }
 
@@ -71,5 +83,6 @@ class SharedPreferencesAlertScheduleStore(context: Context) : AlertScheduleStore
     private companion object {
         const val PREFERENCES_NAME = "alert-schedule-rules"
         const val KEY_RULES = "rules"
+        const val KEY_OIL_DEFAULT_ADDED = "oil-default-added"
     }
 }

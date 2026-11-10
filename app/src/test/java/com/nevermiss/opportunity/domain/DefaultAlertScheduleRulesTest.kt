@@ -35,5 +35,13 @@ class DefaultAlertScheduleRulesTest {
         assertEquals(3600, kospi.intervalSeconds)
     }
 
+    @Test
+    fun `oil schedules weekdays at nine Seoul time and skips weekends`() {
+        val rule = DefaultAlertScheduleRules.rules.single { it.indicator.name == "WTI_CRUDE" }
+        val friday = java.time.ZonedDateTime.parse("2026-11-13T09:00:00+09:00[Asia/Seoul]")
+        assertEquals(java.time.ZonedDateTime.parse("2026-11-16T09:00:00+09:00[Asia/Seoul]"), rule.nextOccurrence(friday))
+        assertEquals(java.time.ZonedDateTime.parse("2026-11-16T09:00:00+09:00[Asia/Seoul]"), rule.nextOccurrence(friday.plusDays(1)))
+    }
+
     private fun secondOfDay(hour: Int, minute: Int): Int = hour * 3600 + minute * 60
 }

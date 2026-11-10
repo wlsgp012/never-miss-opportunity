@@ -20,6 +20,7 @@ class MockMarketDataProvider(
             Indicator.KOSPI -> 2860.0
             Indicator.BTC_USD -> 67890.0
             Indicator.BTC_MVRV -> 2.1
+            Indicator.WTI_CRUDE -> 72.5
         }
         val change = when (indicator.ordinal % 3) {
             0 -> 2.1

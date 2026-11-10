@@ -2,11 +2,11 @@
 
 경제/주식 지표를 정해진 시간에 조회하고, 최신 값과 등락폭을 알림 및 앱 화면으로 보여주는 Kotlin Android 앱입니다.
 
-현재 버전은 `1.0.2`이며, Android `minSdk 26`, `targetSdk 35` 기준으로 구성되어 있습니다.
+현재 버전은 `1.0.8`이며, Android `minSdk 26`, `targetSdk 35` 기준으로 구성되어 있습니다.
 
 ## 주요 기능
 
-- 주요 환율, 주가지수, 변동성, 금, 비트코인 지표를 주기적으로 조회
+- 주요 환율, 주가지수, 변동성, 금, 국제유가, 비트코인 지표를 주기적으로 조회
 - 지표별 현재값, 등락폭, 등락률, 업데이트 시각 표시
 - CNN Fear & Greed Index의 점수와 단계 표시
   - 예: `Fear`, `Extreme Fear`, `Greed`
@@ -33,6 +33,7 @@
 7. KOSPI
 8. BTC/USD
 9. Bitcoin MVRV
+10. WTI crude oil (USD/barrel) — WTI 원유 선물 (`CL=F`)
 
 ## 알림 스케줄
 
@@ -51,12 +52,16 @@
 | KOSPI | 09:00부터 15:00까지 매시간 |
 | BTC/USD | 12:00 |
 | Bitcoin MVRV | 12:00 |
+| WTI 원유 선물 | 평일(월–금) 09:00 |
+
+WTI 기본 규칙은 기존 설치본에도 한 번 추가되며, 기존 사용자 규칙은 유지됩니다. 이후 삭제하거나 가져오기로 제외한 규칙은 앱을 다시 열어도 복원되지 않습니다. WTI를 포함한 모든 지표는 평일에만 알림을 보냅니다.
 
 ## 데이터 소스
 
 | 지표 | 소스 |
 | --- | --- |
 | USD/KRW, S&P 500, Nasdaq 100, VIX, KOSPI, BTC/USD | Yahoo Finance chart API |
+| WTI 원유 선물 (USD/배럴) | Yahoo Finance chart API (`CL=F`) |
 | CNN Fear & Greed | CNN Fear & Greed graph data |
 | Bitcoin MVRV | CoinMetrics `CapMVRVCur` |
 | KRX gold spot 1g | KRX public web fallback provider |

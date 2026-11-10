@@ -74,6 +74,16 @@ class MarketFetchWorkerTest {
         assertFalse(MarketFetchWorker.shouldRetry(result))
     }
 
+    @Test
+    fun `oil notification skips weekends and stale prices`() {
+        val oil = Indicator.entries.single { it.name == "WTI_CRUDE" }
+        val result = RefreshResult("oil", listOf(quote(QuoteState.FRESH).copy(indicator = oil)), emptyList())
+        val saturday = ZonedDateTime.parse("2026-11-14T09:00:00+09:00[Asia/Seoul]")
+        assertFalse(MarketFetchWorker.shouldPostNotification(result, saturday))
+        assertFalse(MarketFetchWorker.shouldPostNotification(result, saturday.plusDays(1)))
+        assertFalse(MarketFetchWorker.shouldPostNotification(result.copy(successes = result.successes.map { it.copy(state = QuoteState.STALE) }), saturday.plusDays(2)))
+    }
+
     private fun quote(state: QuoteState) =
         MarketQuote(Indicator.USD_KRW, 1382.4, 2.1, 0.15, 1_725_000_000_000, "Test", state)
 }

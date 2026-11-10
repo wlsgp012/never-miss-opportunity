@@ -13,9 +13,10 @@ enum class Indicator(
     KRX_GOLD_1G("KRX gold spot 1g", null, "KRX public web"),
     KOSPI("KOSPI", "^KS11", "Yahoo Finance"),
     BTC_USD("BTC/USD", "BTC-USD", "Yahoo Finance"),
-    BTC_MVRV("Bitcoin MVRV", null, "CoinMetrics");
+    BTC_MVRV("Bitcoin MVRV", null, "CoinMetrics"),
+    WTI_CRUDE("WTI crude oil (USD/barrel)", "CL=F", "Yahoo Finance");
 
     companion object {
-        val displayOrder = listOf(USD_KRW, CNN_FEAR_GREED, SP500, NASDAQ100, VIX, KRX_GOLD_1G, KOSPI, BTC_USD, BTC_MVRV)
+        val displayOrder = listOf(USD_KRW, CNN_FEAR_GREED, SP500, NASDAQ100, VIX, KRX_GOLD_1G, KOSPI, BTC_USD, BTC_MVRV, WTI_CRUDE)
     }
 }

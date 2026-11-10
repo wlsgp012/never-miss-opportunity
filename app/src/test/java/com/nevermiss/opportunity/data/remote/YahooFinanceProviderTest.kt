@@ -167,6 +167,23 @@ class YahooFinanceProviderTest {
         assertEquals(null, (result as ProviderResult.Success).quote.rsi)
     }
 
+    @Test
+    fun `oil fetch requests crude futures and parses price movement`() = runTest {
+        val oil = Indicator.entries.single { it.name == "WTI_CRUDE" }
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setBody("""{"chart":{"result":[{"meta":{"regularMarketPrice":72.5,"previousClose":70.0,"regularMarketTime":1725000000}}]}}"""))
+        server.start()
+        try {
+            val result = YahooFinanceProvider(baseUrl = server.url("/").toString()).fetch(oil)
+            val quote = (result as ProviderResult.Success).quote
+            assertEquals(72.5, quote.value, 0.001)
+            assertEquals(2.5, quote.change, 0.001)
+            assertEquals("/v8/finance/chart/CL=F?range=1d&interval=1m", server.takeRequest().path)
+        } finally {
+            server.shutdown()
+        }
+    }
+
     private fun rsiChartBody(closeValues: List<Double>): String =
         """
         {

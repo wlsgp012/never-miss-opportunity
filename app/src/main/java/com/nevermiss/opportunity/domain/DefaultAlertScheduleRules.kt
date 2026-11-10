@@ -18,6 +18,7 @@ object DefaultAlertScheduleRules {
         add(AlertScheduleRule.recurring("default-kospi-hourly", Indicator.KOSPI, secondOfDay(9), secondOfDay(15), 3600))
         addFixed(Indicator.BTC_USD, 12, 0)
         addFixed(Indicator.BTC_MVRV, 12, 0)
+        addFixed(Indicator.WTI_CRUDE, 9, 0)
     }
 
     private fun MutableList<AlertScheduleRule>.addFixed(indicator: Indicator, hour: Int, minute: Int) {

@@ -18,6 +18,7 @@ class MarketFetchWorker(
         val graph = AppGraph.get(applicationContext)
         val rule = graph.scheduleStore.rule(slotId) ?: return Result.failure()
         val now = ZonedDateTime.now(MarketSchedule.zoneId)
+        if (!rule.enabled) return Result.success()
         if (!MarketSchedule.isAlertDay(now)) {
             graph.scheduler.scheduleAll(now)
             return Result.success()

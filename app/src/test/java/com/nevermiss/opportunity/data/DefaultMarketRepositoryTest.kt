@@ -22,6 +22,26 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultMarketRepositoryTest {
     @Test
+    fun `successful oil fetch excludes stale last traded quote from notifications`() = runTest {
+        val oil = Indicator.entries.single { it.name == "WTI_CRUDE" }
+        val lastTrade = quote(oil, observedAtEpochMillis = 1000)
+        val repository = DefaultMarketRepository(FakeMarketDao(), providerReturning(ProviderResult.Success(lastTrade)), clockMillis = { 1000 + 3 * 24 * 60 * MINUTE })
+        val result = repository.refreshIndicators(listOf(oil), "oil")
+        assertTrue(result.successes.isEmpty())
+        assertEquals(QuoteState.STALE, repository.latestQuotes().getValue(oil).state)
+    }
+
+    @Test
+    fun `failed oil fetch does not notify using cached last trade`() = runTest {
+        val oil = Indicator.entries.single { it.name == "WTI_CRUDE" }
+        val dao = FakeMarketDao(listOf(quote(oil, observedAtEpochMillis = 1000).toEntity(id = 1)))
+        val repository = DefaultMarketRepository(dao, providerReturning(ProviderResult.Failure(oil, "network", true)), clockMillis = { 2000 })
+        val result = repository.refreshIndicators(listOf(oil), "oil")
+        assertTrue(result.successes.isEmpty())
+        assertEquals(1, result.failures.size)
+    }
+
+    @Test
     fun `refresh persists successful provider quotes`() = runTest {
         val quote = quote(Indicator.USD_KRW).copy(signalLabel = "Fear", rsi = 54.2)
         val dao = FakeMarketDao()

@@ -19,6 +19,7 @@ class MarketScheduleTest {
                 Indicator.KOSPI,
                 Indicator.BTC_USD,
                 Indicator.BTC_MVRV,
+                Indicator.WTI_CRUDE,
             ),
             Indicator.displayOrder,
         )
